@@ -112,8 +112,8 @@ def main() -> None:
                 f"{value} | {row.reporting_year or '—'} | {page} |"
             )
         if result.screening_result:
-            print(f"\nScreening priority: {result.screening_result.screening_priority}")
-            print("Screening output is heuristic and requires analyst review.")
+            print(f"\nDisclosure signals requiring review: {len(result.screening_result.signals)}")
+            print("Disclosure screening is heuristic and requires analyst review.")
         return
 
     if args.command == "compare":

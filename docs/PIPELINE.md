@@ -94,4 +94,4 @@ Citation validation kiểm tra tính nhất quán của dữ liệu đã truy xu
 
 Nếu câu hỏi yêu cầu nhiều năm hoặc nhiều metric nhưng retrieval chỉ tìm thấy một phần, pipeline trả trạng thái partial/missing và thêm limitation. Pipeline không tự gắn nhãn trend hoàn chỉnh từ một năm duy nhất.
 
-Greenwashing screening chỉ tạo disclosure-risk signals cần analyst review. Nó không phải fraud detector, xác suất greenwashing hay kết luận pháp lý.
+Disclosure screening chỉ tạo các tín hiệu thiếu hụt disclosure cần analyst review. Nó không phải fraud detector, xác suất hay kết luận pháp lý.

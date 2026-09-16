@@ -36,10 +36,12 @@ def test_document_filter(tmp_path: Path):
     assert result.citations and all(c.document_id == "b" for c in result.citations)
 
 
-def test_greenwashing_target_without_baseline(tmp_path: Path):
+def test_disclosure_target_without_baseline(tmp_path: Path):
     store = Store(tmp_path / "test.db")
     store.add_document(
         "d1", "Claims.pdf", [(3, "We aspire to achieve net-zero emissions by 2030.")]
     )
-    result = ESGPipeline(store).run("Review climate target and greenwashing", 5, mode="audit")
+    result = ESGPipeline(store).run(
+        "Review climate target and disclosure evidence", 5, mode="audit"
+    )
     assert any("năm cơ sở" in signal for signal in result.screening_signals)

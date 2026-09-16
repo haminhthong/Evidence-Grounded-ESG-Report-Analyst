@@ -52,26 +52,26 @@ class CitationVerifier:
         """Ước lượng claim có được các excerpt đã truy xuất hỗ trợ hay không."""
         combined_text = " ".join(c.excerpt for c in citations)
         audits: list[dict[str, Any]] = []
-        supported_count = 0
+        heuristic_match_count = 0
 
         for claim in claims:
-            result = CitationVerifier.verify_claim(claim, combined_text)
+            result = CitationVerifier.check_claim_support_heuristic(claim, combined_text)
             audits.append({"claim": claim, **result})
-            if result["supported"]:
-                supported_count += 1
+            if result["heuristic_match"]:
+                heuristic_match_count += 1
 
         total = max(1, len(claims))
         return {
             "audits": audits,
-            "supported_rate": round(supported_count / total, 4),
+            "heuristic_match_rate": round(heuristic_match_count / total, 4),
             "total_claims": len(claims),
-            "unsupported_claims": [a["claim"] for a in audits if not a["supported"]],
-            "verification_scope": "retrieved_excerpt_support",
+            "unmatched_claims": [a["claim"] for a in audits if not a["heuristic_match"]],
+            "verification_scope": "retrieved_excerpt_heuristic",
         }
 
     @staticmethod
-    def verify_claim(claim: str, excerpt: str) -> dict[str, Any]:
-        """Kiểm tra nhanh số liệu và mức trùng khớp từ khóa giữa claim và excerpt."""
+    def check_claim_support_heuristic(claim: str, excerpt: str) -> dict[str, Any]:
+        """Đo heuristic hỗ trợ claim bằng số liệu và mức trùng khớp từ khóa."""
         claim_lower = claim.lower()
         excerpt_lower = excerpt.lower()
         has_contradiction = bool(NEGATED_PERFORMANCE_PATTERN.search(excerpt_lower))
@@ -82,7 +82,9 @@ class CitationVerifier:
         matched_words = [word for word in claim_words if word in excerpt_lower]
         keyword_overlap = len(matched_words) / max(1, len(claim_words))
         return {
-            "supported": (not has_contradiction) and numbers_supported and keyword_overlap >= 0.3,
+            "heuristic_match": (
+                (not has_contradiction) and numbers_supported and keyword_overlap >= 0.3
+            ),
             "has_contradiction": has_contradiction,
             "numbers_supported": numbers_supported,
             "keyword_overlap": round(keyword_overlap, 2),

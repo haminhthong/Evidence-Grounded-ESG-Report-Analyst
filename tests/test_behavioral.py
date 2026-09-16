@@ -19,13 +19,13 @@ def test_target_with_baseline():
         excerpt="The company commits to reduce absolute Scope 1 emissions by 40% by 2030 compared to 2019 baseline year.",
     )
     analysis = ESGAnalysisService()
-    res = analysis.screen_greenwashing_signals([cite], [])
+    res = analysis.screen_disclosure_signals([cite], [])
     assert any("Baseline Year" in s for s in res.target_credibility_signals)
     assert not any("thiếu năm cơ sở" in s.lower() for s in res.target_credibility_signals)
 
 
 def test_target_without_baseline():
-    """Kiểm tra target tham vọng nhưng thiếu baseline bị cảnh báo Greenwashing."""
+    """Kiểm tra mục tiêu tham vọng nhưng thiếu baseline tạo tín hiệu disclosure."""
     cite = Citation(
         chunk_id=1,
         document_id="d1",
@@ -34,9 +34,9 @@ def test_target_without_baseline():
         excerpt="We proudly aspire to achieve net-zero carbon emissions by 2050 across our worldwide operations.",
     )
     analysis = ESGAnalysisService()
-    res = analysis.screen_greenwashing_signals([cite], [])
+    res = analysis.screen_disclosure_signals([cite], [])
     assert any("thiếu năm cơ sở" in s.lower() for s in res.target_credibility_signals)
-    assert res.risk_level in ("MEDIUM", "HIGH")
+    assert any(signal.code == "TARGET_NO_BASELINE" for signal in res.signals)
 
 
 def test_negated_assurance_as_negative_evidence():
@@ -49,7 +49,7 @@ def test_negated_assurance_as_negative_evidence():
         excerpt="This sustainability report has not been independently assured or audited by an external third party.",
     )
     analysis = ESGAnalysisService()
-    res = analysis.screen_greenwashing_signals([cite], [])
+    res = analysis.screen_disclosure_signals([cite], [])
     assert any("KHÔNG ĐƯỢC kiểm toán hoặc bảo đảm" in s for s in res.evidence_quality_signals)
 
 

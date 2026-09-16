@@ -79,7 +79,7 @@ app = FastAPI(
     description=(
         "Evidence-grounded ESG report analysis with an explicit application pipeline, "
         "hybrid retrieval, structured fact extraction, disclosure auditing, and "
-        "heuristic greenwashing screening."
+        "heuristic disclosure screening."
     ),
     version="2.1.0",
     lifespan=lifespan,

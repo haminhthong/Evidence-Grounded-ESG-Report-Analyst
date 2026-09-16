@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Literal
+from typing import Any
 
-from app.models import Citation, ESGFact, GreenwashingScreeningResult, ScreeningSignal
+from app.models import Citation, DisclosureScreeningResult, ESGFact, ScreeningSignal
 from app.rubric import (
     ASSURANCE_PATTERN,
     BASELINE_PATTERN,
@@ -19,72 +19,56 @@ from app.rubric import (
 
 SCREENING_RULES: dict[str, dict[str, Any]] = {
     "TARGET_NO_BASELINE": {
-        "weight": 2,
         "severity": "medium",
         "category": "target_credibility",
         "rule": "target_present AND baseline_absent",
         "message": "Có mục tiêu giảm phát thải nhưng thiếu năm cơ sở (Baseline year).",
     },
     "TARGET_NO_INTERIM": {
-        "weight": 1,
         "severity": "low",
         "category": "target_credibility",
         "rule": "target_present AND interim_absent",
         "message": "Thiếu lộ trình mục tiêu trung gian ngắn/trung hạn trước 2050.",
     },
     "NO_QUANTITATIVE_METRICS": {
-        "weight": 2,
         "severity": "medium",
         "category": "evidence_quality",
         "rule": "metrics_count == 0",
         "message": "Toàn bộ bằng chứng mới ở mức mô tả định tính, thiếu số liệu đo lường.",
     },
     "EXPLICIT_NO_ASSURANCE": {
-        "weight": 2,
         "severity": "medium",
         "category": "evidence_quality",
         "rule": "assurance_negated",
         "message": "Báo cáo ghi nhận rõ KHÔNG ĐƯỢC kiểm toán hoặc bảo đảm độc lập.",
     },
     "NO_ASSURANCE_FOUND": {
-        "weight": 1,
         "severity": "low",
         "category": "evidence_quality",
         "rule": "assurance_absent",
         "message": "Chưa tìm thấy phạm vi bảo đảm độc lập cho báo cáo.",
     },
     "TARGET_MISSED_OR_EMISSIONS_INCREASED": {
-        "weight": 2,
         "severity": "medium",
         "category": "evidence_quality",
         "rule": "performance_negated",
         "message": "Ghi nhận mục tiêu không đạt hoặc phát thải tăng.",
     },
-    "HIGH_VAGUE_NARRATIVE_RATIO": {
-        "weight": 2,
-        "severity": "medium",
-        "category": "narrative_risk",
-        "rule": "vague_count > metrics * 1.5",
-        "message": "Mật độ ngôn ngữ tham vọng vượt trội so với số liệu chứng minh.",
-    },
 }
 
 
-class GreenwashingScreeningService:
-    """Tạo tín hiệu sàng lọc có rule, mức độ và evidence riêng cho từng tín hiệu."""
+class DisclosureScreening:
+    """Tạo tín hiệu thiếu hụt disclosure kèm rule và evidence nguồn."""
 
     def __init__(self, rules: dict[str, dict[str, Any]] | None = None):
         self.rules = rules or SCREENING_RULES
 
-    def screen(
-        self, citations: list[Citation], facts: list[ESGFact]
-    ) -> GreenwashingScreeningResult:
+    def screen(self, citations: list[Citation], facts: list[ESGFact]) -> DisclosureScreeningResult:
         text = " ".join(item.excerpt.lower() for item in citations)
         metrics = max(
             len(METRIC_PATTERN.findall(text)),
             sum(1 for fact in facts if fact.value is not None),
         )
-        all_ids = [_citation_key(citation) for citation in citations]
         target_ids = [
             _citation_key(citation)
             for citation in citations
@@ -205,37 +189,15 @@ class GreenwashingScreeningService:
             )
 
         vague_count = sum(text.count(word) for word in VAGUE_WORDS)
-        if metrics > 0 and vague_count > metrics * 1.5:
-            self._add_signal(
-                signals,
-                "HIGH_VAGUE_NARRATIVE_RATIO",
-                all_ids,
-                message=(
-                    f"Mật độ ngôn ngữ tham vọng ({vague_count}) vượt số liệu chứng minh ({metrics})."
-                ),
-            )
-            narrative_signals.append(
-                f"⚠ Mật độ ngôn ngữ tham vọng ({vague_count}) vượt số liệu chứng minh ({metrics})."
-            )
-        elif vague_count > 0:
-            narrative_signals.append(f"ℹ Ghi nhận {vague_count} từ ngữ tham vọng.")
+        if vague_count > 0:
+            narrative_signals.append(f"ℹ Ghi nhận {vague_count} từ ngữ tham vọng trong evidence.")
 
-        score = sum(self.rules.get(signal.code, {}).get("weight", 1) for signal in signals)
-        risk_level: Literal["LOW", "MEDIUM", "HIGH"] = (
-            "HIGH" if score >= 5 else "MEDIUM" if score >= 2 else "LOW"
-        )
-        priority: Literal["LOW_SIGNAL", "MEDIUM_SIGNAL", "HIGH_SIGNAL"] = {
-            "LOW": "LOW_SIGNAL",
-            "MEDIUM": "MEDIUM_SIGNAL",
-            "HIGH": "HIGH_SIGNAL",
-        }[risk_level]
+        signal_count = len(signals)
         summary = (
-            f"Mức ưu tiên sàng lọc: {priority}. "
-            "Đây là tín hiệu heuristic để chuyên gia đối soát, không phải xác suất hay kết luận pháp lý."
+            f"Phát hiện {signal_count} tín hiệu disclosure cần analyst xem xét. "
+            "Đây là heuristic dựa trên evidence đã truy xuất, không phải xác suất hay kết luận pháp lý."
         )
-        return GreenwashingScreeningResult(
-            risk_level=risk_level,
-            screening_priority=priority,
+        return DisclosureScreeningResult(
             signals=signals,
             target_credibility_signals=target_signals,
             evidence_quality_signals=evidence_signals,

@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.query_plan import build_retrieval_plan
 from app.retrieval import EvidenceRetriever
 
 
@@ -147,7 +148,8 @@ def _evaluate_case(
 ) -> EvaluationCaseResult:
     """Thực thi đánh giá cho một trường hợp câu hỏi kiểm thử cụ thể KHÔNG bị leakage document_id."""
     document_ids = case.query_scope
-    citations = retrieval.run(case.question, top_k, document_ids)
+    plan = build_retrieval_plan(case.question, document_ids=document_ids)
+    citations = retrieval.run_plan(plan, top_k)
     expected = {(item.document_id, item.page) for item in case.expected}
     retrieved = [(item.document_id, item.page) for item in citations]
     relevant_positions = [

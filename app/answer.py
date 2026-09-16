@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 from app.llm import LLMClient, validate_answer_grounding
-from app.models import Citation, GreenwashingScreeningResult, PillarResult
+from app.models import Citation, DisclosureScreeningResult, PillarResult
 
 
 class AnswerGenerator:
@@ -21,7 +21,7 @@ class AnswerGenerator:
         overall_coverage: float,
         citations: list[Citation],
         question: str,
-        screening_result: GreenwashingScreeningResult | None = None,
+        screening_result: DisclosureScreeningResult | None = None,
     ) -> str:
         if self.llm and self.llm.is_available() and citations:
             rubric_summary = f"Coverage {overall_coverage}%. " + ", ".join(
@@ -65,7 +65,7 @@ class AnswerGenerator:
         overall_coverage: float,
         citations: list[Citation],
         question: str,
-        screening_result: GreenwashingScreeningResult | None,
+        screening_result: DisclosureScreeningResult | None,
     ) -> str:
         if not citations:
             return (
@@ -77,13 +77,13 @@ class AnswerGenerator:
             f"[C{index}] [{citation.document_name}, page {citation.page}]"
             for index, citation in enumerate(citations[:6], start=1)
         )
-        risk = screening_result.risk_level if screening_result else "not-run"
+        signal_count = len(screening_result.signals) if screening_result else 0
 
         if mode == "qa":
             excerpt = citations[0].excerpt[:220].strip()
             return (
                 f"Evidence-grounded response to '{question}': {excerpt} [C1]\n\n"
-                f"Evidence sources: {sources}. Screening risk: {risk}."
+                f"Evidence sources: {sources}. Disclosure signals requiring review: {signal_count}."
             )
 
         pillar_summary = ", ".join(
@@ -92,7 +92,7 @@ class AnswerGenerator:
         return (
             f"Disclosure coverage computed from indexed evidence: {overall_coverage}%.\n"
             f"Pillars: {pillar_summary}.\n"
-            f"Screening risk: {risk}.\n\n"
+            f"Disclosure signals requiring review: {signal_count}.\n\n"
             f"Evidence reviewed: {sources}.\n\n"
             "Coverage measures the presence of disclosure evidence in the indexed "
             "corpus, not the company's actual ESG performance."

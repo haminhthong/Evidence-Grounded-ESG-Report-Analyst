@@ -30,7 +30,7 @@ def test_analysis_service_delegates_to_domain_components():
     assert len(signals) > 0
 
     # Kiểm tra sàng lọc tín hiệu rủi ro công bố.
-    res = service.screen_greenwashing_signals(citations, facts)
+    res = service.screen_disclosure_signals(citations, facts)
     assert any("Baseline Year" in s for s in res.target_credibility_signals)
 
     # Kiểm tra ma trận bằng chứng theo phạm vi mặc định.

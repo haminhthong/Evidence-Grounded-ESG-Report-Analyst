@@ -116,8 +116,8 @@
                     <button type="button" class="tab-btn" data-tab="tab-matrix">
                         <span>📊 Evidence Matrix (Audit Rubric)</span>
                     </button>
-                    <button type="button" class="tab-btn" data-tab="tab-greenwash">
-                        <span>🛡️ Greenwashing Radar</span>
+                    <button type="button" class="tab-btn" data-tab="tab-disclosure">
+                        <span>🛡️ Disclosure Review</span>
                     </button>
                     <button type="button" class="tab-btn" data-tab="tab-analytics">
                         <span>📈 So sánh & Xu hướng (YoY)</span>
@@ -149,7 +149,7 @@
                             <button type="button" class="preset-chip" data-query="What are the Scope 1, Scope 2, and Scope 3 greenhouse gas emissions reported?">
                                 🌱 GHG Scope 1/2/3
                             </button>
-                            <button type="button" class="preset-chip" data-query="Review climate target, baseline year, and screening for greenwashing risk.">
+                            <button type="button" class="preset-chip" data-query="Review climate target, baseline year, and disclosure evidence.">
                                 🎯 Net-Zero & Baseline
                             </button>
                             <button type="button" class="preset-chip" data-query="Assess employee safety metrics, injury rate, TRIR, and training hours.">
@@ -356,19 +356,19 @@
                     </div>
                 </div>
 
-                <!-- NỘI DUNG TAB 3: GREENWASHING SCREENING RADAR -->
-                <div id="tab-greenwash" class="tab-content">
+                <!-- NỘI DUNG TAB 3: DISCLOSURE REVIEW SIGNALS -->
+                <div id="tab-disclosure" class="tab-content">
                     <div class="tab-inner-header">
                         <div>
-                            <h3>Sàng lọc Rủi ro Greenwashing Đa Tín hiệu</h3>
-                            <p class="panel-subtitle">Đánh giá 3 góc độ: Độ tin cậy mục tiêu, Chất lượng số liệu, và Rủi ro định hướng văn phong.</p>
+                            <h3>Tín hiệu Disclosure cần xem xét</h3>
+                            <p class="panel-subtitle">Kiểm tra độ đầy đủ của mục tiêu, số liệu và bằng chứng hỗ trợ.</p>
                         </div>
-                        <div id="gw-overall-risk-badge" class="risk-badge risk-low">RISK LEVEL: LOW</div>
+                        <div id="disclosure-overall-badge" class="risk-badge status-neutral">CHƯA CÓ DỮ LIỆU</div>
                     </div>
 
                     <!-- Tuyên bố giới hạn -->
                     <div class="disclaimer-alert">
-                        <strong>Lưu ý Kiểm toán:</strong> Chỉ số sàng lọc rủi ro (Screening Risk) là công cụ khuyến nghị định hướng chuyên gia đối soát chuyên sâu, không phải kết luận pháp lý hay phán quyết hành vi gian lận của doanh nghiệp.
+                        <strong>Lưu ý:</strong> Đây là các tín hiệu thiếu hụt disclosure dựa trên evidence đã truy xuất, cần analyst xem xét thêm; không phải xác suất hay kết luận pháp lý.
                     </div>
 
                     <div class="signals-three-cols-grid">
@@ -379,7 +379,7 @@
                                 <h4>1. Target Credibility</h4>
                             </div>
                             <p class="signal-card-desc">Đối soát năm cơ sở (Baseline Year), cam kết Net-Zero và mốc trung hạn 2030.</p>
-                            <ul id="gw-target-signals" class="signal-items-list">
+                            <ul id="disclosure-target-signals" class="signal-items-list">
                                 <li>Chưa có dữ liệu phân tích.</li>
                             </ul>
                         </div>
@@ -391,7 +391,7 @@
                                 <h4>2. Evidence Quality</h4>
                             </div>
                             <p class="signal-card-desc">Mật độ số liệu đo lường, phạm vi bảo đảm độc lập (Assurance) và dấu hiệu phát thải tăng.</p>
-                            <ul id="gw-evidence-signals" class="signal-items-list">
+                            <ul id="disclosure-evidence-signals" class="signal-items-list">
                                 <li>Chưa có dữ liệu phân tích.</li>
                             </ul>
                         </div>
@@ -403,7 +403,7 @@
                                 <h4>3. Narrative Risk</h4>
                             </div>
                             <p class="signal-card-desc">Tỷ lệ từ ngữ định hướng tham vọng (vague words) so với số liệu chứng minh thực tế.</p>
-                            <ul id="gw-narrative-signals" class="signal-items-list">
+                            <ul id="disclosure-narrative-signals" class="signal-items-list">
                                 <li>Chưa có dữ liệu phân tích.</li>
                             </ul>
                         </div>

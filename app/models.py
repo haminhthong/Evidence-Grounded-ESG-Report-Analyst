@@ -128,7 +128,7 @@ class RetrievalPlan(BaseModel):
         "fact_lookup",
         "criterion_audit",
         "cross_document_compare",
-        "greenwashing_screening",
+        "disclosure_screening",
         "temporal_trend",
     ] = "fact_lookup"
     original_question: str = ""
@@ -193,7 +193,7 @@ class EvidenceConflict(BaseModel):
 
 
 class ScreeningSignal(BaseModel):
-    """Tín hiệu sàng lọc rủi ro greenwashing có cấu trúc và có thể giải thích được."""
+    """Tín hiệu disclosure có cấu trúc để analyst xem xét thêm."""
 
     code: str
     category: Literal["target_credibility", "evidence_quality", "narrative_risk"]
@@ -227,7 +227,6 @@ class EvidenceRequirementResult(BaseModel):
     status: Literal["satisfied", "partial", "missing"] = "missing"
     matched_fact_ids: list[str] = Field(default_factory=list)
     matched_citation_ids: list[str] = Field(default_factory=list)
-    confidence: float = 1.0
     missing_aspects: list[str] = Field(default_factory=list)
 
 
@@ -281,11 +280,9 @@ class ExtractionQualityReport(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
-class GreenwashingScreeningResult(BaseModel):
-    """Kết quả sàng lọc rủi ro greenwashing đa tín hiệu."""
+class DisclosureScreeningResult(BaseModel):
+    """Các tín hiệu thiếu hụt disclosure cần analyst xem xét thêm."""
 
-    risk_level: Literal["LOW", "MEDIUM", "HIGH"] = "LOW"
-    screening_priority: Literal["LOW_SIGNAL", "MEDIUM_SIGNAL", "HIGH_SIGNAL"] = "LOW_SIGNAL"
     signals: list[ScreeningSignal] = Field(default_factory=list)
     target_credibility_signals: list[str] = Field(default_factory=list)
     evidence_quality_signals: list[str] = Field(default_factory=list)
@@ -450,7 +447,7 @@ class AnalysisResponse(BaseModel):
     evidence_matrix: list[EvidenceMatrixRow] = Field(default_factory=list)
     extracted_facts: list[ESGFact] = Field(default_factory=list)
     conflicts: list[EvidenceConflict] = Field(default_factory=list)
-    screening_result: GreenwashingScreeningResult | None = None
+    screening_result: DisclosureScreeningResult | None = None
     temporal_analysis: TemporalAnalysisResult | None = None
     comparison: CompanyComparisonResult | None = None
     evidence_completeness: EvidenceCompletenessResult | dict[str, Any] = Field(
@@ -474,7 +471,7 @@ class AnalysisState(BaseModel):
     extracted_facts: list[ESGFact] = Field(default_factory=list)
     criteria_results: list[CriterionResult] = Field(default_factory=list)
     evidence_matrix: list[EvidenceMatrixRow] = Field(default_factory=list)
-    screening_result: GreenwashingScreeningResult | None = None
+    screening_result: DisclosureScreeningResult | None = None
     conflicts: list[EvidenceConflict] = Field(default_factory=list)
     temporal_analysis: TemporalAnalysisResult | None = None
     comparison: CompanyComparisonResult | None = None

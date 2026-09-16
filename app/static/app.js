@@ -255,7 +255,7 @@ analyzeForm.addEventListener('submit', async (e) => {
 
         renderAnalysisResults(data);
         renderEvidenceMatrix(currentEvidenceMatrix);
-        renderGreenwashingScreening(data.screening_result, data.conflicts);
+        renderDisclosureScreening(data.screening_result, data.conflicts);
         renderTraceWaterfall(data.trace, data.limitations);
 
         setTimeout(() => {
@@ -430,12 +430,12 @@ function renderEvidenceMatrix(rows) {
     }).join('');
 }
 
-// 3. Hiển thị kết quả Tab 3 (Greenwashing Screening Radar)
-function renderGreenwashingScreening(screening, conflicts) {
-    const riskBadge = document.getElementById('gw-overall-risk-badge');
-    const targetList = document.getElementById('gw-target-signals');
-    const evidenceList = document.getElementById('gw-evidence-signals');
-    const narrativeList = document.getElementById('gw-narrative-signals');
+// 3. Hiển thị các tín hiệu disclosure cần analyst xem xét
+function renderDisclosureScreening(screening, conflicts) {
+    const riskBadge = document.getElementById('disclosure-overall-badge');
+    const targetList = document.getElementById('disclosure-target-signals');
+    const evidenceList = document.getElementById('disclosure-evidence-signals');
+    const narrativeList = document.getElementById('disclosure-narrative-signals');
     const conflictsList = document.getElementById('conflicts-list');
 
     if (!screening) {
@@ -448,10 +448,9 @@ function renderGreenwashingScreening(screening, conflicts) {
     }
 
     if (riskBadge) {
-        riskBadge.textContent = `SCREENING PRIORITY: ${screening.screening_priority || screening.risk_level}`;
-        riskBadge.className = screening.risk_level === 'LOW' ? 'risk-badge risk-low' : (
-            screening.risk_level === 'MEDIUM' ? 'risk-badge risk-medium' : 'risk-badge risk-high'
-        );
+        const signalCount = (screening.signals || []).length;
+        riskBadge.textContent = `${signalCount} TÍN HIỆU CẦN XEM XÉT`;
+        riskBadge.className = 'risk-badge status-neutral';
     }
 
     if (targetList) {

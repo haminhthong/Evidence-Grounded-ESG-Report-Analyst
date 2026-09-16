@@ -58,7 +58,7 @@ def build_retrieval_plan(
             "ảo tưởng",
         )
     ):
-        intent = "greenwashing_screening"
+        intent = "disclosure_screening"
         subqueries = [
             f"{question} target year baseline year",
             f"{question} Scope 1 Scope 2 Scope 3 metrics tCO2e",

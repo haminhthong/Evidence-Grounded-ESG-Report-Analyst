@@ -215,7 +215,6 @@ class EvidenceCompletenessGate:
                     status="satisfied",
                     matched_fact_ids=matched_fact_ids,
                     matched_citation_ids=matched_citation_ids,
-                    confidence=0.95,
                 )
             elif found_sub_count > 0:
                 return EvidenceRequirementResult(
@@ -223,14 +222,12 @@ class EvidenceCompletenessGate:
                     status="partial",
                     matched_fact_ids=matched_fact_ids,
                     matched_citation_ids=matched_citation_ids,
-                    confidence=0.70,
                     missing_aspects=missing_aspects,
                 )
             else:
                 return EvidenceRequirementResult(
                     requirement=req_name,
                     status="missing",
-                    confidence=0.0,
                     missing_aspects=missing_aspects or ["not_found_in_evidence"],
                 )
 
@@ -295,7 +292,6 @@ class EvidenceCompletenessGate:
                     status="satisfied",
                     matched_fact_ids=matched_fact_ids,
                     matched_citation_ids=matched_citation_ids,
-                    confidence=0.95,
                 )
             else:
                 return EvidenceRequirementResult(
@@ -303,7 +299,6 @@ class EvidenceCompletenessGate:
                     status="partial",
                     matched_fact_ids=matched_fact_ids,
                     matched_citation_ids=matched_citation_ids,
-                    confidence=0.70,
                     missing_aspects=missing_aspects,
                 )
 
@@ -314,7 +309,6 @@ class EvidenceCompletenessGate:
                     status="satisfied",
                     matched_fact_ids=[],
                     matched_citation_ids=matched_citation_ids,
-                    confidence=0.85,
                 )
             else:
                 return EvidenceRequirementResult(
@@ -322,14 +316,12 @@ class EvidenceCompletenessGate:
                     status="partial",
                     matched_fact_ids=[],
                     matched_citation_ids=matched_citation_ids,
-                    confidence=0.60,
                     missing_aspects=missing_aspects,
                 )
 
         return EvidenceRequirementResult(
             requirement=req_name,
             status="missing",
-            confidence=0.0,
             missing_aspects=["not_found_in_evidence"],
         )
 

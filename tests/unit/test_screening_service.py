@@ -1,9 +1,9 @@
-from app.domain.screening import GreenwashingScreeningService
+from app.domain.screening import DisclosureScreening
 from app.models import Citation, ESGFact
 
 
 def test_target_without_baseline_signal():
-    service = GreenwashingScreeningService()
+    service = DisclosureScreening()
     citations = [
         Citation(
             chunk_id=1,
@@ -16,7 +16,7 @@ def test_target_without_baseline_signal():
     facts = []
 
     res = service.screen(citations, facts)
-    assert res.risk_level in ("MEDIUM", "HIGH")
+    assert any(signal.code == "TARGET_NO_BASELINE" for signal in res.signals)
     assert any(s.code == "TARGET_NO_BASELINE" for s in res.signals)
     target_signal = next(s for s in res.signals if s.code == "TARGET_NO_BASELINE")
     assert target_signal.category == "target_credibility"
@@ -26,7 +26,7 @@ def test_target_without_baseline_signal():
 
 
 def test_qualitative_only_and_explicit_no_assurance():
-    service = GreenwashingScreeningService()
+    service = DisclosureScreening()
     citations = [
         Citation(
             chunk_id=1,
@@ -41,11 +41,11 @@ def test_qualitative_only_and_explicit_no_assurance():
     res = service.screen(citations, facts)
     assert any(s.code == "NO_QUANTITATIVE_METRICS" for s in res.signals)
     assert any(s.code == "EXPLICIT_NO_ASSURANCE" for s in res.signals)
-    assert res.risk_level in ("MEDIUM", "HIGH")
+    assert len(res.signals) >= 2
 
 
 def test_verified_targets_and_metrics_low_risk():
-    service = GreenwashingScreeningService()
+    service = DisclosureScreening()
     citations = [
         Citation(
             chunk_id=1,
@@ -70,7 +70,7 @@ def test_verified_targets_and_metrics_low_risk():
     ]
 
     res = service.screen(citations, facts)
-    assert res.risk_level == "LOW"
+    assert not res.signals
     assert not any(s.code == "TARGET_NO_BASELINE" for s in res.signals)
     assert not any(s.code == "NO_QUANTITATIVE_METRICS" for s in res.signals)
     assert any("External Assurance" in s for s in res.evidence_quality_signals)

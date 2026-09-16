@@ -10,7 +10,6 @@ def test_evidence_completeness_satisfied():
             value=125000.0,
             unit="tCO2e",
             year=2024,
-            confidence=0.95,
         )
     ]
     citations = [
@@ -25,7 +24,6 @@ def test_evidence_completeness_satisfied():
 
     res = gate.evaluate_requirement("scope_1", facts, citations)
     assert res.status == "satisfied"
-    assert res.confidence >= 0.9
     assert len(res.matched_fact_ids) > 0
 
 
@@ -37,7 +35,6 @@ def test_evidence_completeness_partial_when_missing_year():
             value=125000.0,
             unit="tCO2e",
             year=None,  # Missing year!
-            confidence=0.95,
         )
     ]
     citations = [

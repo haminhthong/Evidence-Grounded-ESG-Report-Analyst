@@ -1,11 +1,11 @@
 # Evidence-Grounded ESG Report Analyst
 
-[![CI](https://github.com/haminhthong/Multi-Agent-ESG-Report-Analyst/actions/workflows/ci.yml/badge.svg)](https://github.com/haminhthong/Multi-Agent-ESG-Report-Analyst/actions/workflows/ci.yml)
+[![CI](https://github.com/haminhthong/Evidence-Grounded-ESG-Report-Analyst/actions/workflows/ci.yml/badge.svg)](https://github.com/haminhthong/Evidence-Grounded-ESG-Report-Analyst/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-API-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> Repository: Multi-Agent-ESG-Report-Analyst
+> Repository: Evidence-Grounded-ESG-Report-Analyst
 
 > Evidence-grounded ESG analysis from PDF reports: extract text, retrieve supporting passages, normalize structured metrics, validate facts, and produce answers with page-level citations.
 
@@ -18,9 +18,10 @@ Dự án được chia thành ba nhóm chức năng để mô tả luôn khớp 
 - Core: PDF native extraction, layout metadata, OCR fallback, stable chunks, provenance,
   SQLite FTS5/BM25, structured ESG fact extraction, fact validation và grounded Q&A/audit;
 - Extended analysis: rubric, evidence completeness, temporal analysis, company comparison và
-  disclosure-risk screening dạng heuristic;
-- Optional ML: SentenceTransformer dense retrieval, hybrid RRF, cross-encoder reranking và
-  local LLM synthesis khi cài thêm profile `[ml]`.
+  disclosure screening dạng heuristic;
+- Optional experiments: SentenceTransformer dense retrieval, hybrid RRF, cross-encoder reranking
+  và local LLM synthesis khi cài thêm profile `[ml]`. Các thành phần này không thay đổi đường
+  chạy BM25 deterministic mặc định.
 
 FastAPI, CLI, dashboard, Docker và CI cung cấp cách chạy và kiểm thử reproducible cho pipeline.
 
@@ -49,7 +50,7 @@ flowchart TD
     M -->|Rejected / conflict| N[Retain decision and limitation]
     M -->|Accepted| O[Accepted ESG facts]
     I --> P[Rubric and evidence completeness]
-    O --> Q[Temporal / comparison analysis]
+    O --> Q[Temporal / comparison / disclosure analysis]
     P --> Q
     Q --> R[Grounded answer synthesis]
     R --> S[Claim and citation validation]
@@ -91,14 +92,14 @@ Stable chunk
  ↓
 Fact candidate
  ↓
-Validation / human review
+Validation / analyst review
  ├─ rejected
  ├─ conflict
  └─ accepted
        ↓
    Accepted ESG fact
        ↓
-Temporal / comparison / audit
+Temporal / comparison / disclosure analysis
 ~~~~
 
 Mỗi claim có thể truy ngược:
@@ -152,7 +153,7 @@ Kết quả phụ thuộc corpus, retrieval mode và model tùy chọn nên khô
 ## Cấu trúc dự án
 
 ~~~~text
-Multi-Agent-ESG-Report-Analyst/
+Evidence-Grounded-ESG-Report-Analyst/
 ├─ app/
 │  ├─ main.py                 FastAPI routes và lifecycle
 │  ├─ pipeline.py             pipeline tuần tự duy nhất
@@ -190,7 +191,7 @@ Yêu cầu Python 3.11+. OCR cho PDF scan cần Tesseract trong PATH; Docker ima
 
 ~~~~powershell
 git clone <repository-url>
-cd Multi-Agent-ESG-Report-Analyst
+cd Evidence-Grounded-ESG-Report-Analyst
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
@@ -285,7 +286,7 @@ docker run --rm -p 8000:8000 -e RETRIEVAL_MODE=bm25 esg-report-analyst:local
 - Extraction tạo candidate; review là bước bắt buộc trước khi dùng accepted-fact analysis.
 - Citation validation kiểm tra metadata, page và excerpt, không phải assurance độc lập.
 - Temporal/comparison báo thiếu năm hoặc thiếu fact thay vì tự suy luận trend.
-- Greenwashing output chỉ là disclosure-risk screening signal, cần analyst review; không phải xác suất hay kết luận pháp lý.
+- Disclosure screening chỉ tạo tín hiệu cần analyst review; không phải xác suất hay kết luận pháp lý.
 - Dense retrieval, reranker và local LLM đều optional; BM25 deterministic là path mặc định.
 
 ## Tài liệu

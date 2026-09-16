@@ -394,7 +394,7 @@ class ESGPipeline:
             state.validated_citations, state.extracted_facts, state.criterion_bundles
         )
         screening = (
-            self.analysis.screen_greenwashing_signals(
+            self.analysis.screen_disclosure_signals(
                 state.validated_citations, state.extracted_facts
             )
             if state.mode == "audit"
@@ -418,12 +418,12 @@ class ESGPipeline:
         self._trace(
             state,
             "Analysis",
-            "Evaluate rubric and screen greenwashing risk",
+            "Evaluate rubric and collect disclosure signals",
             started,
             retrieved_chunks=len(matrix),
             details={
                 "coverage": overall_coverage,
-                "risk_level": screening.risk_level if screening else "UNKNOWN",
+                "disclosure_signals": len(screening.signals) if screening else 0,
                 "evidence_matrix_rows": len(matrix),
             },
         )
@@ -489,8 +489,8 @@ class ESGPipeline:
         }
         for claim in state.claims:
             audit = audits.get(claim.get("text"), {})
-            claim["supported"] = bool(audit.get("supported", False))
-            claim["support_score"] = audit.get("keyword_overlap", 0.0)
+            claim["heuristic_match"] = bool(audit.get("heuristic_match", False))
+            claim["overlap_score"] = audit.get("keyword_overlap", 0.0)
         self._trace(
             state,
             "Answer",
@@ -498,7 +498,7 @@ class ESGPipeline:
             started,
             details={
                 "claims": len(claims),
-                "supported_rate": state.verification_summary.get("supported_rate", 0.0),
+                "heuristic_match_rate": state.verification_summary.get("heuristic_match_rate", 0.0),
             },
         )
 
@@ -560,7 +560,7 @@ class ESGPipeline:
         state.limitations = [
             "Analysis is limited to indexed documents and retrieved evidence chunks.",
             "Citation validation checks metadata and retrieved excerpts; it is not independent third-party verification of the issuer's ESG disclosure.",
-            "Greenwashing output is a heuristic screening signal for analyst review, not a legal or fraud determination.",
+            "Disclosure screening chỉ là tín hiệu heuristic để analyst xem xét; it is not a probability and not a legal conclusion.",
         ]
         if state.evidence_completeness.get("status") == "incomplete":
             state.limitations.append(

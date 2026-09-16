@@ -7,7 +7,6 @@ from typing import Any
 from app.config import settings
 from app.models import Citation, RetrievalPlan
 from app.reranker import reranker
-from app.rubric import RUBRICS
 from app.store import Store
 
 
@@ -18,19 +17,6 @@ class EvidenceRetriever:
         self.store = store
         self.mode = mode or settings.retrieval_mode
 
-    def plan_query(self, question: str) -> str:
-        lowered = question.lower()
-        topics = [
-            topic
-            for rubric in RUBRICS.values()
-            if any(keyword in lowered for keyword in rubric.topics)
-            for topic in rubric.topics
-        ]
-        if not topics:
-            topics = [topic for rubric in RUBRICS.values() for topic in rubric.topics]
-        topics = list(dict.fromkeys(topics))
-        return " ".join((question, *topics, "target baseline performance assurance metrics"))
-
     def run(
         self,
         query: str,
@@ -39,7 +25,7 @@ class EvidenceRetriever:
     ) -> list[Citation]:
         primitive_mode = "hybrid" if self.mode in ("hybrid", "hybrid_rerank") else self.mode
         rows = self.store.search(
-            query=self.plan_query(query),
+            query=query,
             limit=max(top_k * 3, 15) if self.mode == "hybrid_rerank" else top_k,
             document_ids=document_ids,
             mode=primitive_mode,

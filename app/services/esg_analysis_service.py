@@ -5,15 +5,15 @@ from __future__ import annotations
 from app.domain.company_comparison import CompanyComparisonService
 from app.domain.evidence_matrix import EvidenceMatrixBuilder
 from app.domain.rubric_evaluator import PillarEvaluator, RubricEvaluator
-from app.domain.screening import GreenwashingScreeningService
+from app.domain.screening import DisclosureScreening
 from app.domain.temporal_analysis import TemporalAnalyzer
 from app.models import (
     Citation,
     CompanyComparisonResult,
     CriterionEvidenceBundle,
+    DisclosureScreeningResult,
     ESGFact,
     EvidenceMatrixRow,
-    GreenwashingScreeningResult,
     PillarResult,
     TemporalAnalysisResult,
 )
@@ -27,14 +27,14 @@ class ESGAnalysisService:
         self,
         rubric_evaluator: RubricEvaluator | None = None,
         pillar_evaluator: PillarEvaluator | None = None,
-        screening_service: GreenwashingScreeningService | None = None,
+        screening_service: DisclosureScreening | None = None,
         matrix_builder: EvidenceMatrixBuilder | None = None,
         temporal_analyzer: TemporalAnalyzer | None = None,
         comparison_service: CompanyComparisonService | None = None,
     ) -> None:
         self.rubric_evaluator = rubric_evaluator or RubricEvaluator()
         self.pillar_evaluator = pillar_evaluator or PillarEvaluator(self.rubric_evaluator)
-        self.screening_service = screening_service or GreenwashingScreeningService()
+        self.screening_service = screening_service or DisclosureScreening()
         self.matrix_builder = matrix_builder or EvidenceMatrixBuilder(self.rubric_evaluator)
         self.temporal_analyzer = temporal_analyzer or TemporalAnalyzer()
         self.comparison_service = comparison_service or CompanyComparisonService(
@@ -69,9 +69,9 @@ class ESGAnalysisService:
 
         return self.matrix_builder.build_scoped(citations, facts, bundles, CRITERIA_DEFINITIONS)
 
-    def screen_greenwashing_signals(
+    def screen_disclosure_signals(
         self, citations: list[Citation], facts: list[ESGFact]
-    ) -> GreenwashingScreeningResult:
+    ) -> DisclosureScreeningResult:
         return self.screening_service.screen(citations, facts)
 
     def run_temporal_analysis(

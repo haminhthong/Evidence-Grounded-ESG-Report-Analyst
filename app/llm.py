@@ -183,7 +183,7 @@ def validate_answer_grounding(
             (
                 "disclosure coverage computed from indexed evidence:",
                 "pillars:",
-                "screening risk:",
+                "disclosure signals requiring review:",
                 "coverage measures the presence of disclosure evidence",
             )
         )

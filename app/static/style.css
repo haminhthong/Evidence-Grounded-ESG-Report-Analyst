@@ -1004,6 +1004,12 @@ body {
     color: var(--risk-high-text);
 }
 
+.status-neutral {
+    background: rgba(148, 163, 184, 0.14);
+    border: 1px solid rgba(148, 163, 184, 0.42);
+    color: #cbd5e1;
+}
+
 .answer-text {
     font-size: 15px;
     color: var(--text-pure);
@@ -1401,7 +1407,7 @@ body {
 .pill-g { background: var(--pillar-g-bg); color: var(--pillar-g-color); border: 1px solid var(--pillar-g-border); }
 
 /* ==============================================================================
-   TAB 3: SÀNG LỌC RỦI RO GREENWASHING RADAR
+   TAB 3: DISCLOSURE REVIEW SIGNALS
    ============================================================================== */
 
 .disclaimer-alert {
