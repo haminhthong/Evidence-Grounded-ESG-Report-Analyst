@@ -256,7 +256,7 @@ analyzeForm.addEventListener('submit', async (e) => {
         renderAnalysisResults(data);
         renderEvidenceMatrix(currentEvidenceMatrix);
         renderDisclosureScreening(data.screening_result, data.conflicts);
-        renderTraceWaterfall(data.trace, data.limitations);
+        renderTraceWaterfall(buildPublicPipelineTrace(data), data.limitations);
 
         setTimeout(() => {
             pipelineTraceBox.classList.add('hidden');
@@ -300,6 +300,20 @@ function completePipelineStepper() {
         const el = document.getElementById(id);
         if (el) el.classList.add('active');
     });
+}
+
+// API không trả state orchestration chi tiết; dashboard chỉ hiển thị pipeline cố định.
+function buildPublicPipelineTrace(data) {
+    const evidenceCount = (data.citations || []).length;
+    const factCount = (data.extracted_facts || []).length;
+    const citationStatus = evidenceCount > 0 ? `${evidenceCount} citations` : 'chưa có citation';
+    const factStatus = factCount > 0 ? `${factCount} facts` : 'chưa trích xuất fact';
+    return [
+        'Planner: tạo retrieval plan cho câu hỏi',
+        `Evidence: truy xuất và kiểm tra ${citationStatus}`,
+        `Analysis: rubric/structured extraction (${factStatus})`,
+        'Answer: kiểm tra grounding và trả citation',
+    ];
 }
 
 // 1. Hiển thị kết quả Tab 1 (Q&A & Rubric Scorecards)

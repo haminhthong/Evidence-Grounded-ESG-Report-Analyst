@@ -27,7 +27,7 @@ rubric / completeness / disclosure screening
     ↓
 temporal / comparison khi intent yêu cầu
     ↓
-claim checks
+lexical evidence check + citation validation
     ↓
 deterministic answer hoặc optional LLM synthesis
     ↓
@@ -47,7 +47,8 @@ Các API và CLI chỉ là adapter. Chúng không tự lắp ráp retrieval, ext
 | Candidate/accepted fact lifecycle | Deterministic + review |
 | Rubric, evidence matrix, temporal, comparison | Deterministic |
 | Answer synthesis | Deterministic mặc định; LLM optional |
-| Claim grounding | Deterministic trước; LLM optional bổ sung |
+| Lexical evidence check | Heuristic guard deterministic trên excerpt |
+| Claim grounding | Citation/number checks deterministic; LLM optional bổ sung |
 
 LLM không được phép tự chọn tool, bỏ qua evidence gate hoặc biến extraction chưa review thành accepted fact.
 
@@ -63,7 +64,7 @@ LLM không được phép tự chọn tool, bỏ qua evidence gate hoặc biến
 | Review | fact ID và quyết định | accepted/rejected/conflict lifecycle |
 | Candidate persistence | ESGFact candidates | fact_candidates chờ review |
 | Analysis | citations, temporary facts, rubric; accepted facts cho temporal/comparison | pillars, matrix, temporal/comparison/screening |
-| Answer | question, analysis, citations | answer, claim support, limitations |
+| Answer | question, analysis, citations | answer, lexical support summary, limitations |
 
 fact_candidates là dữ liệu chờ review. Temporal và comparison mặc định đọc accepted facts từ FactRepository; fact tạm thời trong một request không tự động trở thành canonical.
 
@@ -98,6 +99,10 @@ Fact candidate hoặc accepted fact
 ~~~~
 
 Citation validation kiểm tra tính nhất quán của dữ liệu đã truy xuất. Nó không phải xác minh độc lập tính trung thực của báo cáo.
+
+`AnalysisResponse` chỉ serialize các kết quả phân tích cần cho API/dashboard. `RetrievalPlan`,
+claim list, criterion bundles và trace chi tiết vẫn tồn tại trong state Python để CLI và test dùng,
+nhưng không phải public response contract.
 
 ## Completeness và hạn chế
 

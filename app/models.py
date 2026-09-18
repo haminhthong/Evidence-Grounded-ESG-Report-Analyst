@@ -439,11 +439,13 @@ class AnalysisResponse(BaseModel):
     pillars: list[PillarResult] = Field(default_factory=list)
     citations: list[Citation] = Field(default_factory=list)
     verification_summary: dict[str, Any] = Field(default_factory=dict)
-    trace: list[str] = Field(default_factory=list)
+    # Trace chi tiết chỉ dành cho Python/CLI; API chỉ trả các kết quả phân tích.
+    trace: list[str] = Field(default_factory=list, exclude=True)
     limitations: list[str] = Field(default_factory=list)
 
-    # Các trường nâng cấp cho Evidence-Grounded ESG Intelligence
-    plan: RetrievalPlan | None = None
+    # Kết quả phân tích mở rộng cho audit, temporal và comparison.
+    # Kế hoạch truy xuất là state nội bộ, không phải hợp đồng response công khai.
+    plan: RetrievalPlan | None = Field(default=None, exclude=True)
     evidence_matrix: list[EvidenceMatrixRow] = Field(default_factory=list)
     extracted_facts: list[ESGFact] = Field(default_factory=list)
     conflicts: list[EvidenceConflict] = Field(default_factory=list)
@@ -453,8 +455,8 @@ class AnalysisResponse(BaseModel):
     evidence_completeness: EvidenceCompletenessResult | dict[str, Any] = Field(
         default_factory=EvidenceCompletenessResult
     )
-    claims: list[dict[str, Any]] = Field(default_factory=list)
-    criterion_bundles: list[CriterionEvidenceBundle] = Field(default_factory=list)
+    claims: list[dict[str, Any]] = Field(default_factory=list, exclude=True)
+    criterion_bundles: list[CriterionEvidenceBundle] = Field(default_factory=list, exclude=True)
 
 
 class AnalysisState(BaseModel):

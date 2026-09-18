@@ -89,6 +89,18 @@ class ESGPipeline:
         mode: Literal["qa", "audit"] = "qa",
         focus_pillars: list[Literal["E", "S", "G"]] | None = None,
     ) -> AnalysisResponse:
+        state = self._new_state(question, top_k, document_ids, mode)
+        self._run_stages(state, focus_pillars)
+        return self._build_response(state)
+
+    @staticmethod
+    def _new_state(
+        question: str,
+        top_k: int,
+        document_ids: list[str] | None,
+        mode: Literal["qa", "audit"],
+    ) -> AnalysisState:
+        """Tạo state đầu vào cho một request phân tích."""
         state = AnalysisState(
             request_id=str(uuid.uuid4()),
             user_question=question,
@@ -96,11 +108,19 @@ class ESGPipeline:
             document_ids=document_ids,
             top_k=top_k,
         )
+        return state
+
+    def _run_stages(
+        self,
+        state: AnalysisState,
+        focus_pillars: list[Literal["E", "S", "G"]] | None,
+    ) -> None:
+        """Chạy pipeline tuần tự; từng stage phụ trách đúng một bước xử lý."""
         state.trace.append(
-            f"pipeline.start request_id={state.request_id} mode={mode} retrieval={self.retrieval_mode}"
+            f"pipeline.start request_id={state.request_id} mode={state.mode} "
+            f"retrieval={self.retrieval_mode}"
         )
 
-        # Luồng chính cố định giúp dễ kiểm thử và không để LLM điều khiển pipeline.
         self._validate_scope(state)
         self._plan(state)
         self._retrieve(state)
@@ -117,13 +137,15 @@ class ESGPipeline:
         self._review_answer(state)
         self._build_limitations(state)
 
+    def _build_response(self, state: AnalysisState) -> AnalysisResponse:
+        """Chuyển state nội bộ thành hợp đồng response public."""
         evidence_quality, data_completeness, confidence = _aggregate_pillar_metrics(state.pillars)
         response_status = (
             "incomplete"
             if state.evidence_completeness.get("status") == "incomplete"
             else "completed"
         )
-        response = AnalysisResponse(
+        return AnalysisResponse(
             mode=state.mode,
             request_id=state.request_id,
             status=response_status,
@@ -151,7 +173,6 @@ class ESGPipeline:
             claims=state.claims,
             criterion_bundles=state.criterion_bundles,
         )
-        return response
 
     @staticmethod
     def _merge_citations(
@@ -478,7 +499,7 @@ class ESGPipeline:
             }
             for claim in claims
         ]
-        state.verification_summary = CitationVerifier.audit_claims(
+        state.verification_summary = CitationVerifier.check_claim_support(
             claims,
             state.validated_citations,
         )

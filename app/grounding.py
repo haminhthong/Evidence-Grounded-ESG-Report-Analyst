@@ -48,14 +48,18 @@ class CitationVerifier:
         return valid
 
     @staticmethod
-    def audit_claims(claims: list[str], citations: list[Citation]) -> dict[str, Any]:
-        """Ước lượng claim có được các excerpt đã truy xuất hỗ trợ hay không."""
+    def check_claim_support(claims: list[str], citations: list[Citation]) -> dict[str, Any]:
+        """Chạy lexical evidence check nhẹ trên các excerpt đã truy xuất.
+
+        Đây là heuristic guard để phát hiện claim lệch khỏi bằng chứng hiện có,
+        không phải xác minh độc lập nội dung báo cáo.
+        """
         combined_text = " ".join(c.excerpt for c in citations)
         audits: list[dict[str, Any]] = []
         heuristic_match_count = 0
 
         for claim in claims:
-            result = CitationVerifier.check_claim_support_heuristic(claim, combined_text)
+            result = CitationVerifier.lexical_evidence_check(claim, combined_text)
             audits.append({"claim": claim, **result})
             if result["heuristic_match"]:
                 heuristic_match_count += 1
@@ -66,12 +70,12 @@ class CitationVerifier:
             "heuristic_match_rate": round(heuristic_match_count / total, 4),
             "total_claims": len(claims),
             "unmatched_claims": [a["claim"] for a in audits if not a["heuristic_match"]],
-            "verification_scope": "retrieved_excerpt_heuristic",
+            "verification_scope": "retrieved_excerpt_lexical_check",
         }
 
     @staticmethod
-    def check_claim_support_heuristic(claim: str, excerpt: str) -> dict[str, Any]:
-        """Đo heuristic hỗ trợ claim bằng số liệu và mức trùng khớp từ khóa."""
+    def lexical_evidence_check(claim: str, excerpt: str) -> dict[str, Any]:
+        """Đo mức trùng khớp từ khóa và số liệu giữa claim với excerpt."""
         claim_lower = claim.lower()
         excerpt_lower = excerpt.lower()
         has_contradiction = bool(NEGATED_PERFORMANCE_PATTERN.search(excerpt_lower))

@@ -87,7 +87,9 @@ Run rubric, completeness, disclosure screening; temporal/comparison when intent 
   ↓
 Generate deterministic answer or optional LLM synthesis
   ↓
-Validate claims and attach limitations
+  Lexical evidence check + citation validation
+  ↓
+  Attach limitations
 ~~~~
 
 `ESGPipeline.run()` giữ fact extraction trong context của request dưới trạng thái candidate;
@@ -149,6 +151,10 @@ testing và không được trình bày như semantic embedding.
 `build_retrieval_plan()` là nơi duy nhất mở rộng câu hỏi thành các subquery. Pipeline dùng
 `EvidenceRetriever.run_plan()` cho Q&A/audit; endpoint `/api/search` dùng `run()` để tìm trực
 tiếp bằng một query nguyên bản.
+
+Kiểm tra claim trong pipeline là lexical evidence check trên excerpt đã truy xuất: hệ thống so
+sánh từ khóa, số liệu và citation ID để làm heuristic guard trước khi trả lời. Đây không phải
+factual verification độc lập hay assurance cho nội dung báo cáo.
 
 | Thành phần | Cách kiểm tra |
 |---|---|
@@ -266,6 +272,11 @@ Mở http://localhost:8000. Endpoint chính:
 | GET | /api/documents/{id}/metrics | Fact candidates của báo cáo |
 | PATCH | /api/v1/facts/{fact_id} | Review ACCEPTED/REJECTED/CONFLICT |
 
+Response `/api/analyze` tập trung vào kết quả có thể dùng được: `answer`, `citations`,
+`extracted_facts`, `pillars`, `evidence_matrix`, `screening_signals`, `confidence` và
+`limitations`. Retrieval plan, claim list, criterion bundles và trace chi tiết vẫn được giữ
+trong Python state cho CLI/test nhưng không serialize thành API contract.
+
 CLI:
 
 ~~~~powershell
@@ -297,6 +308,9 @@ CI workflow .github/workflows/ci.yml chạy trên Python 3.12:
 5. chạy retrieval gate với Recall@K và MRR;
 6. build Docker image;
 7. chạy container và gọi `GET /health`.
+
+Test suite cũng có mocked LLM contract test: kiểm tra prompt chứa evidence đã truy xuất, câu trả
+lời có citation hợp lệ và grounding validator hoạt động mà không gọi API thật.
 
 Chạy tương đương local:
 

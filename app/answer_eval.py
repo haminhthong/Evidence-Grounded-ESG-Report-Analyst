@@ -140,7 +140,7 @@ def _evaluate_single_answer(response: Any, case: AnswerEvalCase) -> CaseAnswerMe
     unsupported: list[str] = []
 
     for s in factual_sentences:
-        res = CitationVerifier.check_claim_support_heuristic(s, combined_evidence)
+        res = CitationVerifier.lexical_evidence_check(s, combined_evidence)
         if res["heuristic_match"]:
             supported_count += 1
         else:

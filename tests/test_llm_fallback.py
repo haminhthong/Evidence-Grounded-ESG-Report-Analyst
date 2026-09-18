@@ -69,6 +69,40 @@ def test_pipeline_with_optional_llm_synthesis(tmp_path: Path):
     mock_llm.synthesize_answer.assert_called_once()
 
 
+def test_mocked_llm_contract_preserves_retrieval_and_citations(tmp_path: Path):
+    """Kiểm tra hợp đồng LLM mà không gọi endpoint thật."""
+    store = Store(tmp_path / "test.db")
+    store.add_document(
+        "d1",
+        "TestReport.pdf",
+        [(5, "Scope 1 emissions were 100 metric tons in 2024.")],
+    )
+
+    llm = LLMClient(enabled=True)
+    llm.is_available = MagicMock(return_value=True)
+    llm.chat_completion = MagicMock(
+        side_effect=[
+            "Scope 1 emissions were 100 metric tons in 2024 [C1].",
+            '{"supported": true}',
+        ]
+    )
+
+    result = ESGPipeline(store, llm_client=llm).run(
+        "What are the reported Scope 1 emissions?", top_k=3, mode="qa"
+    )
+
+    assert result.answer == "Scope 1 emissions were 100 metric tons in 2024 [C1]."
+    assert result.citations and result.citations[0].page == 5
+    assert result.verification_summary["answer_review"]["passed"] is True
+    assert llm.chat_completion.call_count == 2
+
+    synthesis_messages = llm.chat_completion.call_args_list[0].args[0]
+    synthesis_prompt = synthesis_messages[1]["content"]
+    assert "Verified Excerpts" in synthesis_prompt
+    assert "[C1]" in synthesis_prompt
+    assert "Scope 1 emissions were 100 metric tons in 2024" in synthesis_prompt
+
+
 def test_validate_answer_grounding_accepts_cid_and_rejects_bad_page():
     citations = [
         {
