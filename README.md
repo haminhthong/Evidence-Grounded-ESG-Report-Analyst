@@ -19,42 +19,53 @@ Dự án được chia thành ba nhóm chức năng để mô tả luôn khớp 
   SQLite FTS5/BM25, structured ESG fact extraction, fact validation và grounded Q&A/audit;
 - Extended analysis: rubric, evidence completeness, temporal analysis, company comparison và
   disclosure screening dạng heuristic;
-- Optional experiments: SentenceTransformer dense retrieval, hybrid RRF, cross-encoder reranking
-  và local LLM synthesis khi cài thêm profile `[ml]`. Các thành phần này không thay đổi đường
-  chạy BM25 deterministic mặc định.
+- Optional experiments: SentenceTransformer dense retrieval, hybrid RRF và cross-encoder
+  reranking khi cài thêm profile `[ml]`. Local LLM synthesis dùng endpoint OpenAI-compatible
+  riêng và không bắt buộc profile `[ml]`. Các thành phần này không thay đổi đường chạy BM25
+  deterministic mặc định.
 
 FastAPI, CLI, dashboard, Docker và CI cung cấp cách chạy và kiểm thử reproducible cho pipeline.
 
 Phạm vi là screening bằng chứng trên corpus đã index. Hệ thống không xác minh độc lập tính trung thực của doanh nghiệp, không suy ra hiệu quả ESG thực tế và không thay thế analyst, auditor hoặc tư vấn pháp lý.
 
-## Pipeline kỹ thuật duy nhất
+## Luồng dữ liệu và pipeline
 
-ESGPipeline.run() là entry point chung cho API, CLI và evaluation. Luồng không để LLM tự chọn tool hay điều khiển thứ tự xử lý.
+Code có hai entry point phối hợp trên cùng SQLite store: `DocumentIngestionService.ingest()`
+phụ trách nạp/index PDF, còn `ESGPipeline.run()` xử lý câu hỏi hoặc audit online. Các bước
+deterministic không để LLM tự chọn tool hay điều khiển thứ tự xử lý.
 
 ~~~~mermaid
 flowchart TD
-    A[ESG PDF] --> B[Native text + layout extraction]
-    B --> C{Trang thiếu text?}
-    C -->|Có| D[OCR fallback + quality report]
-    C -->|Không| E[Normalized page blocks]
-    D --> E
-    E --> F[Stable chunks + metadata]
-    F --> G[SQLite FTS5 / BM25 mặc định]
-    F -. optional ML .-> H[Dense / hybrid RRF / reranker]
-    G --> I[Retrieved evidence]
-    H --> I
-    I --> J[Validated evidence citations]
-    J --> K[Unit/year normalization + conflict checks]
-    K --> L[Fact candidate repository]
-    L --> M{Validator / human review}
-    M -->|Rejected / conflict| N[Retain decision and limitation]
-    M -->|Accepted| O[Accepted ESG facts]
-    I --> P[Rubric and evidence completeness]
-    O --> Q[Temporal / comparison / disclosure analysis]
-    P --> Q
-    Q --> R[Grounded answer synthesis]
-    R --> S[Claim and citation validation]
-    S --> T[Answer + citations + limitations]
+    subgraph OFFLINE[Ingestion và indexing]
+        A[ESG PDF] --> B[Native text + layout extraction]
+        B --> C{Trang thiếu text?}
+        C -->|Có| D[OCR fallback + quality report]
+        C -->|Không| E[Normalized page blocks]
+        D --> E
+        E --> F[Stable chunks + metadata]
+        F --> G[SQLite FTS5 / BM25 mặc định]
+        F -. optional ML .-> H[Dense / hybrid RRF / reranker]
+    end
+
+    subgraph ONLINE[ESGPipeline.run]
+        I[Question / audit request] --> J[Validate scope + Build RetrievalPlan]
+        J --> K[Retrieve evidence]
+        K --> L[Validate citations]
+        L --> M[Extract temporary ESG facts + conflicts]
+        M --> N[Completeness + rubric + disclosure signals]
+        N --> O[Temporal / comparison when intent requires]
+        O --> P[Deterministic or optional LLM answer]
+        P --> Q[Claim/citation validation]
+        Q --> R[Answer + citations + limitations]
+    end
+
+    G -. indexed chunks .-> K
+    H -. indexed chunks .-> K
+    M -. explicit repository save .-> S[Fact candidate]
+    S --> T{Validator / analyst review}
+    T -->|Rejected / conflict| U[Retain decision]
+    T -->|Accepted| V[Accepted ESG facts]
+    V -. temporal/comparison endpoints .-> O
 ~~~~
 
 ### Luồng online
@@ -66,31 +77,35 @@ Validate scope
   ↓
 Build RetrievalPlan
   ↓
-Retrieve BM25 evidence (dense/hybrid optional)
+Retrieve evidence: BM25 by default; dense/hybrid optional
   ↓
 Validate citations and extract temporary facts
   ↓
 Check evidence completeness
   ↓
-Run rubric, temporal, comparison or screening analysis
+Run rubric, completeness, disclosure screening; temporal/comparison when intent requires
   ↓
 Generate deterministic answer or optional LLM synthesis
   ↓
 Validate claims and attach limitations
 ~~~~
 
-LLM, nếu được bật, chỉ hỗ trợ tổng hợp câu trả lời và tùy chọn kiểm tra grounding. Provenance, numeric checks, fact status, scope enforcement và acceptance vẫn là logic deterministic.
+`ESGPipeline.run()` giữ fact extraction trong context của request dưới trạng thái candidate;
+nó không tự động promote fact thành ACCEPTED. Nếu cần lưu vòng đời fact, caller dùng
+`FactRepository.save_candidates()` và endpoint review để promote/reject/conflict. LLM, nếu được
+bật, chỉ hỗ trợ tổng hợp câu trả lời và tùy chọn kiểm tra grounding. Provenance, numeric checks,
+fact status, scope enforcement và acceptance vẫn là logic deterministic.
 
 ## Fact lifecycle và provenance
 
-Đây là phần cốt lõi khác với chatbot đọc PDF:
+Repository có hỗ trợ vòng đời fact rõ ràng; đây không phải bước tự động xác nhận dữ liệu:
 
 ~~~~text
-PDF
+Retrieved evidence
  ↓
-Stable chunk
+FactExtractor tạo candidate trong response
  ↓
-Fact candidate
+FactRepository.save_candidates() (khi caller yêu cầu)
  ↓
 Validation / analyst review
  ├─ rejected
@@ -122,13 +137,18 @@ Ví dụ dữ liệu rút gọn:
 }
 ~~~~
 
-Fact candidate chưa phải dữ liệu đã xác nhận. Chỉ fact đã được validator hoặc analyst chuyển sang ACCEPTED mới được dùng mặc định cho temporal và comparison.
+Fact candidate chưa phải dữ liệu đã xác nhận. Chỉ fact đã được validator hoặc analyst chuyển
+sang ACCEPTED mới được dùng mặc định khi truy vấn temporal và comparison từ store.
 
 ## Retrieval, grounding và evaluation
 
 BM25 là đường chạy mặc định vì có sẵn trong bộ cài đặt cơ bản. Dense retrieval, hybrid RRF
 và cross-encoder chỉ là phần mở rộng; deterministic feature hashing chỉ phục vụ development/
 testing và không được trình bày như semantic embedding.
+
+`build_retrieval_plan()` là nơi duy nhất mở rộng câu hỏi thành các subquery. Pipeline dùng
+`EvidenceRetriever.run_plan()` cho Q&A/audit; endpoint `/api/search` dùng `run()` để tìm trực
+tiếp bằng một query nguyên bản.
 
 | Thành phần | Cách kiểm tra |
 |---|---|
@@ -161,7 +181,7 @@ Evidence-Grounded-ESG-Report-Analyst/
 │  ├─ store.py                SQLite, FTS5, chunks và fact lifecycle
 │  ├─ document_service.py     PDF/OCR ingestion và indexing
 │  ├─ document_intelligence.py parser, layout blocks và quality
-│  ├─ query_plan.py           nhận diện intent và tạo truy vấn
+│  ├─ query_plan.py           nhận diện intent và tạo subquery duy nhất
 │  ├─ retrieval.py            BM25/hybrid retrieval và citation mapping
 │  ├─ answer.py               tổng hợp câu trả lời có bằng chứng
 │  ├─ grounding.py             citation, claim và answer validation
@@ -179,7 +199,7 @@ Evidence-Grounded-ESG-Report-Analyst/
 ├─ docs/                      pipeline và corpus snapshot
 ├─ tests/                     unit, API, integration và regression tests
 ├─ reports/                  evaluation JSON sinh lại được
-├─ scripts/                   tiện ích ingest/evaluation/report
+├─ scripts/                   tiện ích sinh report
 ├─ Dockerfile
 ├─ pyproject.toml
 └─ README.md
@@ -206,13 +226,20 @@ Cấu hình tùy chọn được đọc từ .env:
 | TOP_K | 6 | Số evidence tối đa cho query thường |
 | MAX_FILE_SIZE | 78643200 | PDF tối đa 75 MiB |
 | MAX_PDF_PAGES | 500 | Giới hạn số trang |
+| PARSER_TIMEOUT_SECONDS | 60.0 | Thời gian giới hạn parser |
+| SEED_DEMO_DATA | false | Nạp dữ liệu demo khi khởi động API |
 | USE_LLM | false | Bật local LLM cho synthesis/grounding |
 | LLM_BASE_URL | http://localhost:11434/v1 | OpenAI-compatible endpoint |
 | LLM_MODEL | qwen2.5:7b | Tên model local |
+| LLM_API_KEY | ollama | Khóa tương thích endpoint local |
 | RETRIEVAL_MODE | bm25 | bm25, dense, hybrid, hybrid_rerank |
+| RRF_K | 60 | Hằng số fusion cho hybrid retrieval |
+| EMBEDDING_MODEL | sentence-transformers/all-MiniLM-L6-v2 | Model dense retrieval tùy chọn |
+| RERANKER_MODEL | cross-encoder/ms-marco-MiniLM-L-6-v2 | Model reranking tùy chọn |
 
 Để bật dense/hybrid/reranker, cài thêm `pip install -e ".[ml]"` rồi chọn mode tương ứng.
-Hằng số RRF mặc định là 60 và được giữ trong cấu hình nội bộ.
+`USE_LLM=true` chỉ yêu cầu một endpoint OpenAI-compatible đang chạy theo `LLM_BASE_URL`;
+không cần cài profile `[ml]`. Hằng số RRF mặc định là 60 và được giữ trong cấu hình nội bộ.
 
 Mặc định project chạy offline-first và không phụ thuộc API trả phí.
 
@@ -228,6 +255,7 @@ Mở http://localhost:8000. Endpoint chính:
 |---|---|---|
 | GET | /health | Health check và corpus stats |
 | GET | /api/documents | Danh sách báo cáo đã index |
+| GET | /api/corpus/stats | Thống kê corpus |
 | POST | /api/documents | Upload và index PDF |
 | POST | /api/search | Tìm evidence trực tiếp |
 | POST | /api/analyze | Q&A hoặc audit theo mode |

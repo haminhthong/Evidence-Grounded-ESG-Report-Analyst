@@ -1,6 +1,10 @@
 # Pipeline và data contracts
 
-ESGPipeline trong app/pipeline.py là đường chạy duy nhất cho API, CLI và evaluation. Pipeline tuần tự, không có graph runtime, tool dispatcher hay execution mode do LLM lựa chọn.
+`DocumentIngestionService.ingest()` trong `app/document_service.py` phụ trách nạp và lập chỉ
+mục PDF. `ESGPipeline` trong `app/pipeline.py` là đường chạy online cho Q&A/audit; các adapter
+API, CLI và answer evaluation gọi lại pipeline này khi cần. Retrieval evaluation dùng
+`EvidenceRetriever` trực tiếp để đo riêng chất lượng tìm kiếm. Pipeline tuần tự, không có graph
+runtime, tool dispatcher hay execution mode do LLM lựa chọn.
 
 ## Luồng chạy
 
@@ -19,7 +23,9 @@ temporary ESG facts + conflicts
     ↓
 evidence completeness
     ↓
-rubric / temporal / comparison / screening
+rubric / completeness / disclosure screening
+    ↓
+temporal / comparison khi intent yêu cầu
     ↓
 claim checks
     ↓
@@ -55,7 +61,8 @@ LLM không được phép tự chọn tool, bỏ qua evidence gate hoặc biến
 | Verification | candidates | citations hợp lệ có page, excerpt, evidence ID |
 | Extraction | citations hợp lệ | ESGFact candidates và conflicts |
 | Review | fact ID và quyết định | accepted/rejected/conflict lifecycle |
-| Analysis | citations, accepted facts, rubric | pillars, matrix, temporal/comparison/screening |
+| Candidate persistence | ESGFact candidates | fact_candidates chờ review |
+| Analysis | citations, temporary facts, rubric; accepted facts cho temporal/comparison | pillars, matrix, temporal/comparison/screening |
 | Answer | question, analysis, citations | answer, claim support, limitations |
 
 fact_candidates là dữ liệu chờ review. Temporal và comparison mặc định đọc accepted facts từ FactRepository; fact tạm thời trong một request không tự động trở thành canonical.
@@ -63,10 +70,12 @@ fact_candidates là dữ liệu chờ review. Temporal và comparison mặc đ�
 ## Fact lifecycle và provenance
 
 ~~~~text
-PDF
- ↓ native extraction / OCR / stable chunk
-fact_candidate
- ↓ validator hoặc analyst review
+Retrieved evidence
+ ↓ FactExtractor
+temporary fact_candidate trong response
+ ↓ FactRepository.save_candidates() khi caller yêu cầu
+validator hoặc analyst review
+ ↓
 rejected | conflict | accepted
                          ↓
                     accepted fact
