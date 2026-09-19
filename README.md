@@ -313,7 +313,6 @@ Test suite cũng có mocked LLM contract test: kiểm tra prompt chứa evidence
 lời có citation hợp lệ và grounding validator hoạt động mà không gọi API thật.
 
 Chạy tương đương local:
-
 ~~~~powershell
 python -m ruff check app tests scripts
 python -m ruff format --check app tests scripts
